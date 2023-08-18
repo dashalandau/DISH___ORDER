@@ -27,8 +27,8 @@ class SQLiteDB:
         return answer.fetchall()
 
     def insert_into(self, table_name, params):
-        values = ', '.join([f'"{str(i)}"' for i in parans.values()])
-        columns = ', '.join(parans.keys())
+        values = ', '.join([f'"{str(i)}"' for i in params.values()])
+        columns = ', '.join(params.keys())
 
         self.cur.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
 

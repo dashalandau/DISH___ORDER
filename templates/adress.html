@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    {% for address in addresses %}
+        {{ address }}
+    {% endfor %}
+
+    <form method="post" action="{{ url_for('user_address') }}">
+
+        city
+        street
+        house
+        apartment
+        entrance
+        <input type="text" placeholder="floor" name="floor">
+        <button>Save</button>
+    </form>
+
+    {% if get_flashed_messages() %}
+        <ul class="form-messages">
+          {% for category, message in get_flashed_messages() %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>

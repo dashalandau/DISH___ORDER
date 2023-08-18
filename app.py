@@ -1,8 +1,11 @@
-from flask import Flask, request
+import re
+from flask import Flask, request, render_template, session, redirect, url_for, flash
 
 from functions import SQLiteDB
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = '1134124wefduhfsgiushdfuji'
+db = SQLiteDB("dish.db")
 
 
 @app.route('/cart', methods=['GET', 'PUT'])
@@ -20,21 +23,39 @@ def added():  # put application's code here
     return "add dishes in cart"
 
 
-@app.route('/user', methods=['GET', 'POST', 'DELETE'])
+@app.route('/user', methods=['GET', 'DELETE'])
 def user():  # put application's code here
     with SQLiteDB('dish.db') as db:
-        user = db.select_from("user", ["*"], where=dict(id=1))
+        user = db.select_from("user", ["*"], where=dict(id=session['user_id']))
     return user
 
 
-@app.route('/user/register', methods=['POST'])
-def user_registration():  # put application's code here
+@app.route('/user/register', methods=['GET','POST'])
+def user_registration():
     return "registration"
 
 
-@app.route('/user/sign_in', methods=['POST'])
+@app.route('/user/sign_in', methods=['GET', 'POST'])
 def user_signin():  # put application's code here
-    return "sign in profile"
+
+    if request.method == 'POST':
+        phone = re.sub(r'\D', '', request.form.get('phone',''))
+        password1 = request.form.get('password1')
+
+        with SQLiteDB('dish.db') as db:
+            user = db.select_from("user", ["*"], where=dict(Telephone=phone))
+            if user:
+                user = user[0]
+                if user.get('Password') == password1:
+                    session['user_id'] = user.get('ID')
+                    return redirect(url_for('user'))
+                else:
+                    flash('Введенный пароль не является корректным', 'error')
+
+    context = dict(
+        title='hello word'
+    )
+    return render_template('sign_in.html', **context)
 
 
 @app.route('/user/logout', methods=['POST'])
@@ -63,23 +84,53 @@ def user_history_id(id):  # put application's code here
 
 @app.route('/user/address', methods=['GET', 'POST'])
 def user_address():  # put application's code here
+    if request.method == 'POST':
+        city = request.form.get('city')
+        street = request.form.get('street')
+        house = request.form.get('house')
+        apartment = request.form.get('apartment', 0)
+        entrance = request.form.get('entrance', 0)
+        floor = request.form.get('floor', 0)
+
+        Проверка на обязательные поля
+
+        with SQLiteDB('dish.db') as db:
+            address = db.insert_into('address', dict(city=city, street=street,house=house,apartment=apartment,entrance=entrance,floor=floor,User=session['user_id']))
+
     with SQLiteDB('dish.db') as db:
-        addresses = db.select_from("address", ["*"])
-    return addresses
+        addresses = db.select_from("address", ["*"], where=dict(User=session['user_id']))
+    return render_template('adress.html', addreses=addresses)
 
 
 @app.route('/user/address/<id>', methods=['GET', 'PUT', 'DELETE'])
 def user_address_id(id):  # put application's code here
     with SQLiteDB('dish.db') as db:
-        address = db.select_from("address", ["*"], where=dict(id=id))
+        address = db.select_from("address", ["*"], where=dict(id=id, User=session['user_id']))
     return address
 
 
 @app.route('/menu', methods=['GET'])
 def menu():  # put application's code here
     with SQLiteDB('dish.db') as db:
+        if request.method == 'POST':
+            data = request.form.to_dict()
+            db.insert_into("dish", data)
+
         dishes = db.select_from("dish", ["*"])
-    return dishes
+
+    html_form = f"""
+    <form method = "POST">
+        <input text="text" name="name" placeholder="name">
+        <input text="text" name="Price" placeholder="price">
+        <input text="text" name="Description" placeholder="description">
+        <input text="text" name="picture" placeholder="picture">
+        <input text="text" name="category" placeholder="category">
+        <input type="submit">
+    </form>
+    <br>
+    {str(dishes)}
+    """
+    return html_form
 
 
 @app.route('/menu/<cat_name>', methods=['GET'])
@@ -107,12 +158,12 @@ def menu_search():  # put application's code here
     return dishes
 
 
-@app.route('/admin/dishes', methods=['GET'])
+@app.route('/admin/dishes', methods=['GET', 'POST'])
 def admin_dishes():  # put application's code here
     return "list from dishes"
 
 
-@app.route('/admin/dishes/<dish>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/admin/dishes/<dish>', methods=['GET', 'PUT', 'DELETE'])
 def edit_dish():  # put application's code here
     return "edit the dish"
 
@@ -147,5 +198,5 @@ def search_name():  # put application's code here
     return "search for name"
 
 
-if __name__ == 'main':
+if __name__ == '__main__':
     app.run()
