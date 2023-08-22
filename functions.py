@@ -32,7 +32,7 @@ class SQLiteDB:
 
         self.cur.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
 
-    def select_from(self, table_name, columns: list, where=None):
+    def select_from(self, table_name: object, columns: list, where: object = None) -> object:
         columns = ', '.join(columns)
 
         query = f'SELECT {columns} FROM {table_name}'
