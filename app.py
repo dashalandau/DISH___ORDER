@@ -124,10 +124,6 @@ def user_address_id(id):  # put application's code here
 @app.route('/menu', methods=['GET'])
 def menu():  # put application's code here
     with SQLiteDB('dish.db') as db:
-        if request.method == 'POST':
-            data = request.form.to_dict()
-            db.insert_into("dish", data)
-
         dishes = db.select_from("dish", ["*"])
 
     return render_template('menu.html', dishes=dishes)
@@ -156,7 +152,11 @@ def menu_search():  # put application's code here
 
 
 @app.route('/admin/dishes', methods=['GET', 'POST'])
-def admin_dishes():  # put application's code here
+def admin_dishes():
+    with SQLiteDB('dish.db') as db:
+        if request.method == 'POST':
+            data = request.form.to_dict()
+            db.insert_into("dish", data)
     return "list from dishes"
 
 
@@ -168,11 +168,6 @@ def edit_dish():  # put application's code here
 @app.route('/admin/orders', methods=['GET'])
 def admin_all_orders():  # put application's code here
     return "all orders"
-
-
-@app.route('/admin/orders?status={new/in_progress}', methods=['GET'])
-def admin_order_status():  # put application's code here
-    return "new order/order in progress"
 
 
 @app.route('/admin/orders/<id>', methods=['GET'])
