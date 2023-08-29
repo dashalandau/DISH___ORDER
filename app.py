@@ -24,7 +24,7 @@ def added():  # put application's code here
 
 
 @app.route('/user', methods=['GET', 'DELETE'])
-def user():
+def user_endpoint():
     if 'user_id' in session:
         with SQLiteDB('dish.db') as db:
             user = db.select_from("user", ["*"], where=dict(id=session['user_id']))
@@ -60,13 +60,13 @@ def user_signin():
                 user = user[0]
                 if user.get('Password') == password1:
                     session['user_id'] = user.get('ID')
-                    return redirect(url_for('user'))
+                    return redirect(url_for('user_endpoint'))
                 else:
                     flash('Введенный пароль не является корректным', 'error')
 
-    context = dict(
-        title='hello word'
-    )
+    context = {
+        "title": 'Hello user'
+    }
     return render_template('sign_in.html', **context)
 
 
