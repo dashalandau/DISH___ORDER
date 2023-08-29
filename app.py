@@ -9,18 +9,47 @@ db = SQLiteDB("dish.db")
 
 
 @app.route('/cart', methods=['GET', 'PUT'])
-def cart():  # put application's code here
-    return "cart"
+def cart():
+    if 'cart' not in session:
+        session['cart'] = {}
 
+    if request.method == 'PUT':
+        data = request.json
+        dish_id = data.get('dish_id')
+        quantity = data.get('quantity', 1)
+
+        if dish_id:
+            if dish_id in session['cart']:
+                session['cart'][dish_id] += quantity
+            else:
+                session['cart'][dish_id] = quantity
+
+        return {"message": "Added to cart"}
+
+    return render_template('cart.html', cart=session['cart'])
 
 @app.route('/cart/order', methods=['POST'])
-def order():  # put application's code here
-    return "ordering"
+def order():
+    # Процесс оформления заказа
+    return "Ordering"
 
 
 @app.route('/cart/add', methods=['POST'])
-def added():  # put application's code here
-    return "add dishes in cart"
+def add_to_cart():
+    data = request.form
+    dish_id = data.get('dish_id')
+    quantity = data.get('quantity', 1)
+
+    if 'cart' not in session:
+        session['cart'] = {}
+
+    if dish_id:
+        if dish_id in session['cart']:
+            session['cart'][dish_id] += quantity
+        else:
+            session['cart'][dish_id] = quantity
+
+    return {"message": "Added to cart"}
 
 
 @app.route('/user', methods=['GET', 'DELETE'])
