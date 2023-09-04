@@ -1,5 +1,7 @@
 import re
-from flask import Flask, request, render_template, session, redirect, url_for, flash
+from datetime import datetime
+
+from flask import Flask, request, render_template, session, redirect, url_for, flash, jsonify
 
 from functions import SQLiteDB
 
@@ -8,29 +10,54 @@ app.config['SECRET_KEY'] = '1134124wefduhfsgiushdfuji'
 db = SQLiteDB("dish.db")
 
 
-@app.route('/cart', methods=['GET', 'PUT'])
+@app.route('/cart', methods=['GET', 'POST'])
 def cart():
     if 'cart' not in session:
         session['cart'] = {}
 
-    if request.method == 'PUT':
-        data = request.json
+    if request.method == 'POST':
+        data = request.form
         dish_id = data.get('dish_id')
-        quantity = data.get('quantity', 1)
+        action = data.get('action')  # Действие: add, remove, update
+        quantity = int(data.get('quantity', 1))
 
-        if dish_id:
+        if action == 'add':
             if dish_id in session['cart']:
                 session['cart'][dish_id] += quantity
             else:
                 session['cart'][dish_id] = quantity
-
-        return {"message": "Added to cart"}
+        elif action == 'remove':
+            if dish_id in session['cart']:
+                session['cart'].pop(dish_id, None)
+        elif action == 'update':
+            if dish_id in session['cart']:
+                session['cart'][dish_id] = quantity
 
     return render_template('cart.html', cart=session['cart'])
 
+
 @app.route('/cart/order', methods=['POST'])
 def order():
-    # Процесс оформления заказа
+    user_id = session.get("user_id")
+    user_cart = session.pop('cart', {})  # Очистка корзины после оформления заказа
+    if not user_cart:
+        return "Cart is empty"
+
+    sum_price = 0
+    sum_ccal = 0
+    sum_protein = 0
+    sum_fat = 0
+    sum_carb = 0
+    with SQLiteDB('dish.db') as db:
+
+        for dish_id, quantity in user_cart.items():
+            dish = db.select_from("dish", columns=["*"], where={"ID": dish_id})[0]
+            sum_price += dish["Price"]
+
+        order_id = db.insert_into("order_dishes", {"User": user_id, "Status": 0, "Address": "",  "Price": sum_price, "Ccal": sum_ccal, "Protein": sum_protein, "Fat": sum_fat, "Carb": sum_carb, "Order_date": datetime.now()})
+
+        for dish_id, quantity in user_cart.items():
+            db.insert_into("orders", {"Dish": dish_id, "Count": quantity, "Order_id": 1})
     return "Ordering"
 
 
@@ -38,7 +65,7 @@ def order():
 def add_to_cart():
     data = request.form
     dish_id = data.get('dish_id')
-    quantity = data.get('quantity', 1)
+    quantity = int(data.get('quantity', 1))
 
     if 'cart' not in session:
         session['cart'] = {}
@@ -49,7 +76,18 @@ def add_to_cart():
         else:
             session['cart'][dish_id] = quantity
 
-    return {"message": "Added to cart"}
+    return jsonify({"message": "Added to cart"})
+
+
+@app.route('/cart/remove', methods=['POST'])
+def remove_from_cart():
+    data = request.form
+    dish_id = data.get('dish_id')
+
+    if 'cart' in session and dish_id in session['cart']:
+        session['cart'].pop(dish_id, None)
+
+    return jsonify({"message": "Removed from cart"})
 
 
 @app.route('/user', methods=['GET', 'DELETE'])

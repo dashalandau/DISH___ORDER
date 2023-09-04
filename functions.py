@@ -31,6 +31,7 @@ class SQLiteDB:
         columns = ', '.join(params.keys())
 
         self.cur.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({values})")
+        return self.cur.lastrowid
 
     def select_from(self, table_name: object, columns: list, where: object = None) -> object:
         columns = ', '.join(columns)
