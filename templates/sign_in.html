@@ -15,8 +15,8 @@
 
     {% if get_flashed_messages() %}
         <ul class="form-messages">
-          {% for category, message in get_flashed_messages() %}
-            <li class="{{ category }}">{{ message }}</li>
+          {% for category in get_flashed_messages() %}
+            <li class="{{ category }}"></li>
           {% endfor %}
         </ul>
     {% endif %}
